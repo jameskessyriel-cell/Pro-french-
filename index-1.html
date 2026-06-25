@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Maîtrise du Français Soutenu</title>
+<meta name="description" content="Académie du Langage — Vocabulaire, expressions et éloquence en français soutenu." />
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0A0E1A" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Français Soutenu" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="icon" href="icon-192.png" />
+
+<style>
+  html, body { margin:0; padding:0; background:#0A0E1A; font-family:Georgia,'Times New Roman',serif; }
+  #root { min-height:100vh; }
+  #boot-status {
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#EDE8DC; text-align:center; padding:24px; box-sizing:border-box;
+  }
+  #boot-status .spinner {
+    width:34px; height:34px; border:3px solid #2A3040; border-top-color:#C9A84C; border-radius:50%;
+    animation: spin 0.8s linear infinite; margin-bottom:18px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #boot-status .err {
+    color:#E05C5C; font-family:monospace; font-size:12px; text-align:left; white-space:pre-wrap;
+    background:#1a0e0e; border:1px solid #E05C5C; border-radius:8px; padding:14px; margin-top:16px; max-width:100%; overflow:auto;
+  }
+  #boot-status button {
+    margin-top:18px; background:#C9A84C; color:#0A0E1A; border:none; border-radius:8px;
+    padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="root">
+  <div id="boot-status">
+    <div class="spinner"></div>
+    <div style="font-size:14px;color:#8A8070;">Chargement de l'application…</div>
+  </div>
+</div>
+
+<script>
+  // Filet de sécurité : affiche toute erreur directement sur la page, sans outils de développement.
+  window.__appRendered = false;
+  function showFatalError(title, detail) {
+    if (window.__appRendered) { console.warn(title, detail); return; }
+    var el = document.getElementById("boot-status");
+    if (!el) return;
+    el.innerHTML =
+      '<div style="font-size:32px;margin-bottom:10px;">⚠️</div>' +
+      '<div style="font-size:15px;font-weight:bold;margin-bottom:6px;">' + title + '</div>' +
+      '<div style="font-size:12px;color:#8A8070;margin-bottom:4px;">Faites une capture d\'écran de ce message et envoyez-la à Claude.</div>' +
+      '<div class="err">' + (detail || "") + '</div>' +
+      '<button onclick="location.reload()">Réessayer</button>';
+  }
+  window.addEventListener("error", function(e) {
+    showFatalError("Erreur JavaScript", (e.error && e.error.stack) ? e.error.stack : e.message);
+  });
+  window.addEventListener("unhandledrejection", function(e) {
+    showFatalError("Erreur asynchrone", e.reason ? String(e.reason.stack || e.reason) : "inconnue");
+  });
+  // Si rien n'a chargé après 12 secondes, on le signale (connexion lente / CDN bloqué).
+  setTimeout(function() {
+    if (!window.__appRendered && !window.__appErrored) {
+      showFatalError("Le chargement prend trop de temps", "Les bibliothèques React n'ont pas pu se charger à temps. Vérifiez votre connexion internet, puis appuyez sur Réessayer.");
+    }
+  }, 12000);
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"
+        onerror="window.__appErrored=true; showFatalError('Impossible de charger React', 'Le fichier react.production.min.js n\'a pas pu être téléchargé depuis le CDN. Vérifiez votre connexion internet.')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"
+        onerror="window.__appErrored=true; showFatalError('Impossible de charger ReactDOM', 'Le fichier react-dom.production.min.js n\'a pas pu être téléchargé depuis le CDN. Vérifiez votre connexion internet.')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.28.4/babel.min.js"
+        onerror="window.__appErrored=true; showFatalError('Impossible de charger Babel', 'Le fichier babel.min.js n\'a pas pu être téléchargé depuis le CDN. Vérifiez votre connexion internet.')"></script>
+
+<script id="app-source" type="text/plain">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ─── BASE DE DONNÉES EMBARQUÉE ───────────────────────────────────────────────
+const DB = {
+  mots: [
+    { id:1, mot:"Perspicace", phonetique:"[pɛʁ.spi.kas]", categorie:"Adjectif", niveau:"Soutenu", theme:"Intelligence", definition:"Capable de comprendre rapidement et avec profondeur une situation complexe.", synonymes:["clairvoyant","sagace","pénétrant","lucide"], antonymes:["obtus","borné","naïf"], exemple:"Son esprit perspicace lui permit d'anticiper les conséquences de cette décision capitale.", contexte:"Utilisé dans les milieux académiques et professionnels pour qualifier une analyse fine." },
+    { id:2, mot:"Acrimonieux", phonetique:"[a.kʁi.mɔ.njø]", categorie:"Adjectif", niveau:"Très soutenu", theme:"Émotions", definition:"Empreint d'aigreur, de rancœur et d'une certaine hostilité dans les propos.", synonymes:["acerbe","mordant","caustique","virulent"], antonymes:["bienveillant","doux","affable"], exemple:"La réponse acrimonieuse du ministre étonna l'ensemble de l'assemblée.", contexte:"Fréquent dans les analyses politiques et la critique littéraire." },
+    { id:3, mot:"Circonspect", phonetique:"[siʁ.kɔ̃s.pɛkt]", categorie:"Adjectif", niveau:"Soutenu", theme:"Comportement", definition:"Qui agit avec prudence et réserve, en pesant soigneusement chaque décision.", synonymes:["prudent","mesuré","réservé","avisé"], antonymes:["imprudent","téméraire","impétueux"], exemple:"Il fut circonspect dans ses déclarations, conscient des enjeux diplomatiques.", contexte:"Recommandé en contexte professionnel, juridique ou diplomatique." },
+    { id:4, mot:"Véhément", phonetique:"[ve.e.mɑ̃]", categorie:"Adjectif", niveau:"Soutenu", theme:"Expression", definition:"Qui s'exprime avec une force passionnée, une ardeur intense et convaincante.", synonymes:["ardent","fougueux","passionné","impétueux"], antonymes:["calme","modéré","flegmatique"], exemple:"Son plaidoyer véhément ébranla les convictions de ses opposants.", contexte:"Rhétorique, débats, littérature engagée." },
+    { id:5, mot:"Ostensible", phonetique:"[ɔs.tɑ̃.sibl]", categorie:"Adjectif", niveau:"Soutenu", theme:"Apparence", definition:"Qui est fait de manière visible, délibérément mis en évidence pour être remarqué.", synonymes:["apparent","manifeste","flagrant","démonstratif"], antonymes:["discret","imperceptible","subtil"], exemple:"Son mépris ostensible pour les conventions sociales dérangeait son entourage.", contexte:"Sciences sociales, littérature, analyse comportementale." },
+    { id:6, mot:"Épistémique", phonetique:"[e.pis.te.mik]", categorie:"Adjectif", niveau:"Académique", theme:"Philosophie", definition:"Relatif à la connaissance, aux conditions et aux limites du savoir humain.", synonymes:["cognitif","gnoséologique","noétique"], antonymes:[], exemple:"Cette incertitude épistémique nous invite à l'humilité intellectuelle.", contexte:"Philosophie, sciences humaines, épistémologie." },
+    { id:7, mot:"Alacre", phonetique:"[a.lakʁ]", categorie:"Adjectif", niveau:"Littéraire", theme:"Énergie", definition:"Qui manifeste de l'entrain, de la vivacité et une disposition joyeuse à agir.", synonymes:["vif","enjoué","allègre","dispos"], antonymes:["apathique","languissant","accablé"], exemple:"D'un pas alacre, il gravit les marches du perron avec une énergie communicative.", contexte:"Littérature classique, descriptions narratives." },
+    { id:8, mot:"Tergiverser", phonetique:"[tɛʁ.ʒi.vɛʁ.se]", categorie:"Verbe", niveau:"Soutenu", theme:"Comportement", definition:"Hésiter longuement, user de détours pour éviter de prendre une décision nette.", synonymes:["atermoyer","procrastiner","temporiser","biaiser"], antonymes:["trancher","décider","s'engager"], exemple:"Il est temps de cesser de tergiverser et de formuler une position claire.", contexte:"Milieux politiques, gestion, rhétorique." },
+    { id:9, mot:"Magnanimité", phonetique:"[ma.ɲa.ni.mi.te]", categorie:"Nom féminin", niveau:"Soutenu", theme:"Vertu", definition:"Grandeur d'âme qui pousse à pardonner généreusement et à se montrer noble dans ses actes.", synonymes:["générosité","noblesse","grandeur d'âme","clémence"], antonymes:["mesquinerie","rancune","étroitesse"], exemple:"La magnanimité du vainqueur força l'admiration de ses adversaires.", contexte:"Éthique, diplomatie, histoire." },
+    { id:10, mot:"Lacunaire", phonetique:"[la.ky.nɛʁ]", categorie:"Adjectif", niveau:"Académique", theme:"Analyse", definition:"Qui présente des lacunes, des insuffisances importantes dans sa complétude.", synonymes:["incomplet","défaillant","parcellaire","fragmentaire"], antonymes:["exhaustif","complet","rigoureux"], exemple:"L'enquête, jugée lacunaire par les experts, fut ordonnée à nouveau.", contexte:"Recherche académique, droit, journalisme d'investigation." },
+    { id:11, mot:"Prégnant", phonetique:"[pʁe.ɲɑ̃]", categorie:"Adjectif", niveau:"Soutenu", theme:"Impact", definition:"Qui s'impose à l'esprit avec force, qui laisse une impression vive et durable.", synonymes:["marquant","saisissant","percutant","fort"], antonymes:["anodin","fade","insignifiant"], exemple:"Cette image prégnante hanta longtemps la mémoire des témoins.", contexte:"Critique artistique, analyse littéraire." },
+    { id:12, mot:"Équivoque", phonetique:"[e.ki.vɔk]", categorie:"Adjectif/Nom", niveau:"Courant soutenu", theme:"Langage", definition:"Qui peut s'interpréter de plusieurs manières, portant à confusion ou à malentendu.", synonymes:["ambigu","polysémique","obscur","indécis"], antonymes:["clair","univoque","explicite"], exemple:"Ses propos équivoques alimentèrent les spéculations les plus diverses.", contexte:"Rhétorique, droit, analyse du discours." },
+    { id:13, mot:"Délétère", phonetique:"[de.le.tɛʁ]", categorie:"Adjectif", niveau:"Soutenu", theme:"Danger", definition:"Qui est nuisible à la santé morale, physique ou sociale, qui corrompt insidieusement.", synonymes:["nocif","toxique","pernicieux","néfaste"], antonymes:["salutaire","bénéfique","sain"], exemple:"L'influence délétère de cette idéologie se fit sentir sur plusieurs générations.", contexte:"Médecine, sciences sociales, critique politique." },
+    { id:14, mot:"Intempestif", phonetique:"[ɛ̃.tɑ̃.pɛs.tif]", categorie:"Adjectif", niveau:"Soutenu", theme:"Temps", definition:"Qui survient à un moment inopportun, qui manque de discernement dans son timing.", synonymes:["inopportun","déplacé","intempestueux","mal à propos"], antonymes:["opportun","approprié","bien choisi"], exemple:"Son intervention intempestive brisa l'atmosphère de recueillement qui régnait.", contexte:"Protocole, diplomatie, savoir-vivre." },
+    { id:15, mot:"Acuité", phonetique:"[a.kɥi.te]", categorie:"Nom féminin", niveau:"Soutenu", theme:"Intelligence", definition:"Finesse et pénétration d'une perception, physique ou intellectuelle, d'une grande précision.", synonymes:["finesse","perspicacité","pénétration","vivacité"], antonymes:["obscurcissement","lourdeur","émoussement"], exemple:"L'acuité de son analyse laissa l'auditoire sans voix.", contexte:"Médecine, philosophie, critique intellectuelle." },
+    { id:16, mot:"Pusillanime", phonetique:"[py.zi.la.nim]", categorie:"Adjectif", niveau:"Littéraire", theme:"Caractère", definition:"Qui manque de courage moral, qui cède facilement par crainte d'affronter les difficultés.", synonymes:["lâche","craintif","timoré","couard"], antonymes:["courageux","intrépide","valeureux"], exemple:"Son attitude pusillanime face à la crise décevit profondément ses partisans.", contexte:"Politique, histoire, psychologie morale." },
+    { id:17, mot:"Délibératif", phonetique:"[de.li.be.ʁa.tif]", categorie:"Adjectif", niveau:"Académique", theme:"Politique", definition:"Relatif à la délibération collective, au processus de discussion et de prise de décision.", synonymes:["consultatif","décisionnel","parlementaire"], antonymes:["autoritaire","unilatéral","arbitraire"], exemple:"L'assemblée délibérative adopta la résolution après un long débat.", contexte:"Droit constitutionnel, science politique, philosophie morale." },
+    { id:18, mot:"Corroborer", phonetique:"[kɔ.ʁɔ.bɔ.ʁe]", categorie:"Verbe", niveau:"Soutenu", theme:"Argumentation", definition:"Confirmer, renforcer la crédibilité d'un fait ou d'une affirmation par des preuves supplémentaires.", synonymes:["confirmer","étayer","valider","attester"], antonymes:["infirmer","contredire","réfuter"], exemple:"Ces nouvelles données viennent corroborer les hypothèses formulées en amont.", contexte:"Recherche scientifique, droit, journalisme." },
+    { id:19, mot:"Aporie", phonetique:"[a.pɔ.ʁi]", categorie:"Nom féminin", niveau:"Philosophique", theme:"Philosophie", definition:"Difficulté logique insoluble, impasse intellectuelle devant laquelle la raison s'arrête.", synonymes:["impasse","contradiction","paradoxe","antinomie"], antonymes:["solution","résolution","clarté"], exemple:"Cette aporie fondamentale a occupé les philosophes depuis l'Antiquité.", contexte:"Philosophie, logique, épistémologie." },
+    { id:20, mot:"Consubstantiel", phonetique:"[kɔ̃.sybs.tɑ̃.sjɛl]", categorie:"Adjectif", niveau:"Très soutenu", theme:"Philosophie", definition:"Qui partage la même substance, profondément lié à quelque chose au point d'en être inséparable.", synonymes:["inhérent","intrinsèque","indissociable","constitutif"], antonymes:["extérieur","accessoire","accidentel"], exemple:"La liberté est consubstantielle à toute véritable démocratie.", contexte:"Théologie, philosophie, discours politique élevé." },
+  ],
+  expressions: [
+    { id:1, expression:"Faire montre de", definition:"Manifester, exhiber de manière visible une qualité ou un sentiment.", exemple:"Il fit montre d'une patience remarquable face à ses détracteurs.", categorie:"Expression verbale" },
+    { id:2, expression:"À l'aune de", definition:"À la mesure de, en comparaison avec, en prenant comme critère de référence.", exemple:"À l'aune des résultats obtenus, cette politique peut être qualifiée de succès.", categorie:"Locution prépositionnelle" },
+    { id:3, expression:"Tenir en lisière", definition:"Maintenir sous contrôle étroit, imposer des contraintes pour limiter la liberté d'action.", exemple:"Ce règlement tient en lisière les ambitions des acteurs du marché.", categorie:"Expression verbale" },
+    { id:4, expression:"N'avoir cure de", definition:"Se désintéresser totalement, ne pas accorder d'importance ni d'attention à quelque chose.", exemple:"Il n'avait cure des critiques formulées contre son œuvre.", categorie:"Expression verbale" },
+    { id:5, expression:"À bon escient", definition:"Avec discernement, en faisant preuve de jugement et de pertinence dans l'action.", exemple:"Ces ressources doivent être utilisées à bon escient pour maximiser leur impact.", categorie:"Locution adverbiale" },
+    { id:6, expression:"Mettre en exergue", definition:"Mettre en valeur, souligner avec insistance un élément pour le distinguer.", exemple:"Le rapport met en exergue les disparités structurelles du système éducatif.", categorie:"Expression verbale" },
+    { id:7, expression:"Porter en filigrane", definition:"Contenir de manière implicite, sous-entendue ou discrètement perceptible.", exemple:"Ce discours porte en filigrane une critique acerbe de la politique actuelle.", categorie:"Expression verbale" },
+    { id:8, expression:"Faire fi de", definition:"Négliger délibérément, ne tenir aucun compte de quelque chose.", exemple:"Il fit fi des convenances pour défendre ses convictions avec éclat.", categorie:"Expression verbale" },
+    { id:9, expression:"Au demeurant", definition:"Par ailleurs, au reste, considéré sous d'autres aspects ou dans l'ensemble.", exemple:"Ce projet, au demeurant fort ambitieux, mérite un examen attentif.", categorie:"Locution adverbiale" },
+    { id:10, expression:"En l'occurrence", definition:"Dans ce cas précis, dans la circonstance dont il est question.", exemple:"En l'occurrence, la décision du tribunal s'impose comme la seule juste.", categorie:"Locution adverbiale" },
+  ],
+  citations: [
+    { texte:"Les esprits médiocres condamnent souvent ce qu'ils sont incapables de comprendre.", auteur:"Henri de Jomini" },
+    { texte:"La connaissance s'acquiert par l'expérience, tout le reste n'est qu'information.", auteur:"Albert Einstein" },
+    { texte:"L'éloquence est l'art de parler de telle façon que ceux à qui l'on parle se plaisent à écouter.", auteur:"Blaise Pascal" },
+    { texte:"Un homme qui lit vaut deux hommes qui marchent.", auteur:"Proverbe haïtien" },
+    { texte:"La parole est moitié à celui qui parle, moitié à celui qui écoute.", auteur:"Michel de Montaigne" },
+    { texte:"L'instruction est une arme chargée dont le peuple ne doit jamais se dessaisir.", auteur:"Victor Hugo" },
+  ],
+  connecteurs: [
+    { connecteur:"Néanmoins", usage:"Concession", exemple:"Néanmoins, il convient de nuancer cette affirmation." },
+    { connecteur:"En outre", usage:"Addition", exemple:"En outre, cette mesure présente des avantages considérables." },
+    { connecteur:"Par voie de conséquence", usage:"Conséquence", exemple:"Par voie de conséquence, la décision s'impose d'elle-même." },
+    { connecteur:"À cet égard", usage:"Référence", exemple:"À cet égard, les données disponibles sont éloquentes." },
+    { connecteur:"Force est de constater", usage:"Constat", exemple:"Force est de constater que les résultats restent insuffisants." },
+    { connecteur:"Il appert que", usage:"Déduction formelle", exemple:"Il appert que cette hypothèse mérite confirmation." },
+    { connecteur:"Eu égard à", usage:"Considération", exemple:"Eu égard aux circonstances, une telle décision s'impose." },
+    { connecteur:"Dans la mesure où", usage:"Condition/cause", exemple:"Dans la mesure où ces faits sont avérés, la responsabilité est engagée." },
+  ]
+};
+
+const generateQuizQuestions = () => {
+  const questions = [];
+  const mots = DB.mots;
+  for (let i = 0; i < mots.length; i++) {
+    const correct = mots[i];
+    const others = mots.filter((_, idx) => idx !== i).sort(() => Math.random() - 0.5).slice(0, 3);
+    const options = [...others.map(m => m.definition), correct.definition].sort(() => Math.random() - 0.5);
+    questions.push({ type:"definition", question:`Quelle est la définition de « ${correct.mot} » ?`, options, answer: correct.definition, mot: correct.mot });
+    if (correct.synonymes.length > 0) {
+      const syn = correct.synonymes[0];
+      const wrongSyns = mots.filter((_, idx) => idx !== i && mots[idx].synonymes.length > 0).sort(() => Math.random() - 0.5).slice(0, 3).map(m => m.synonymes[0] || m.mot);
+      const synOptions = [...wrongSyns, syn].sort(() => Math.random() - 0.5);
+      questions.push({ type:"synonyme", question:`Quel est un synonyme de « ${correct.mot} » ?`, options: synOptions, answer: syn, mot: correct.mot });
+    }
+  }
+  return questions.sort(() => Math.random() - 0.5).slice(0, 20);
+};
+
+const speak = (text, slow = false) => {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "fr-FR";
+  utterance.rate = slow ? 0.6 : 0.9;
+  utterance.pitch = 1.0;
+  const voices = window.speechSynthesis.getVoices();
+  const frVoice = voices.find(v => v.lang.startsWith("fr"));
+  if (frVoice) utterance.voice = frVoice;
+  window.speechSynthesis.speak(utterance);
+};
+
+const save = (key, val) => { try { localStorage.setItem("mfs_" + key, JSON.stringify(val)); } catch {} };
+const load = (key, def) => { try { const v = localStorage.getItem("mfs_" + key); return v ? JSON.parse(v) : def; } catch { return def; } };
+
+const Icon = ({ name, size = 20, color = "currentColor" }) => {
+  const icons = {
+    home: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    book: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
+    quiz: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+    volume: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>,
+    check: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>,
+    x: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+    search: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+    ai: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>,
+    sun: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+    moon: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+    heart_full: <svg width={size} height={size} fill={color} stroke={color} strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+    heart_empty: <svg width={size} height={size} fill="none" stroke={color} strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+  };
+  return icons[name] || null;
+};
+
+function App() {
+  const [tab, setTab] = useState("accueil");
+  const [dark, setDark] = useState(() => load("dark", true));
+  const [favoris, setFavoris] = useState(() => load("favoris", []));
+  const [progress, setProgress] = useState(() => load("progress", { xp: 0, niveau: 1, serie: 0, motsVus: [], quizTotal: 0, quizBons: 0 }));
+  const [quizState, setQuizState] = useState({ questions: [], idx: 0, score: 0, done: false, selected: null });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [aiInput, setAiInput] = useState("");
+  const [aiOutput, setAiOutput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMode, setAiMode] = useState("reformuler");
+  const [motDuJour, setMotDuJour] = useState([]);
+  const [expDuJour, setExpDuJour] = useState([]);
+  const [citationDuJour, setCitationDuJour] = useState(null);
+  const [expandedMot, setExpandedMot] = useState(null);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const G = "#C9A84C";
+  const GL = "#E8C872";
+  const p = {
+    bg: dark ? "#0A0E1A" : "#F8F5EF",
+    surface: dark ? "#111827" : "#FFFFFF",
+    surface2: dark ? "#1A2233" : "#F0EDE6",
+    gold: G, goldLight: GL,
+    text: dark ? "#EDE8DC" : "#1A1410",
+    textMuted: dark ? "#8A8070" : "#7A7060",
+    border: dark ? "#2A3040" : "#DDD8CE",
+    success: "#4CAF7D",
+    error: "#E05C5C",
+  };
+
+  useEffect(() => {
+    const d = Math.floor(Date.now() / 86400000);
+    const si = (d % 4) * 5;
+    setMotDuJour(DB.mots.slice(si, si + 5).length >= 5 ? DB.mots.slice(si, si + 5) : DB.mots.slice(0, 5));
+    const ei = (d % 3) * 3;
+    setExpDuJour(DB.expressions.slice(ei, ei + 3).length >= 3 ? DB.expressions.slice(ei, ei + 3) : DB.expressions.slice(0, 3));
+    setCitationDuJour(DB.citations[d % DB.citations.length]);
+  }, []);
+
+  useEffect(() => { save("dark", dark); }, [dark]);
+  useEffect(() => { save("favoris", favoris); }, [favoris]);
+  useEffect(() => { save("progress", progress); }, [progress]);
+
+  const showNotif = (msg) => { setNotification(msg); setTimeout(() => setNotification(null), 2500); };
+
+  const toggleFavori = (id) => {
+    const isFav = favoris.includes(id);
+    setFavoris(prev => isFav ? prev.filter(f => f !== id) : [...prev, id]);
+    showNotif(isFav ? "Retiré des favoris" : "Ajouté aux favoris ✦");
+  };
+
+  const marquerVu = (id) => {
+    if (!progress.motsVus.includes(id)) {
+      setProgress(prev => ({ ...prev, xp: prev.xp + 10, motsVus: [...prev.motsVus, id], niveau: Math.floor((prev.xp + 10) / 100) + 1 }));
+      showNotif("+10 XP — Nouveau mot maîtrisé ✦");
+    }
+  };
+
+  const startQuiz = () => {
+    setQuizState({ questions: generateQuizQuestions(), idx: 0, score: 0, done: false, selected: null });
+    setQuizStarted(true);
+  };
+
+  const answerQuiz = (option) => {
+    const q = quizState.questions[quizState.idx];
+    const correct = option === q.answer;
+    setQuizState(prev => ({ ...prev, selected: option }));
+    setTimeout(() => {
+      const newScore = correct ? quizState.score + 1 : quizState.score;
+      setProgress(prev => ({ ...prev, xp: prev.xp + (correct ? 15 : 0), niveau: Math.floor((prev.xp + (correct ? 15 : 0)) / 100) + 1, quizTotal: prev.quizTotal + 1, quizBons: prev.quizBons + (correct ? 1 : 0) }));
+      if (quizState.idx + 1 >= quizState.questions.length) {
+        setQuizState(prev => ({ ...prev, score: newScore, done: true, selected: null }));
+      } else {
+        setQuizState(prev => ({ ...prev, idx: prev.idx + 1, score: newScore, selected: null }));
+      }
+    }, 900);
+  };
+
+  const callAI = async () => {
+    if (!aiInput.trim()) return;
+    setAiLoading(true);
+    setAiOutput("");
+    const prompts = {
+      reformuler: `Tu es un expert en éloquence du français soutenu. Reformule cette phrase en français académique et élégant. Propose 2 versions numérotées. Sois concis. Phrase : "${aiInput}"`,
+      definir: `Définis ce mot en français soutenu : définition claire, niveau de langue, 3 synonymes élégants, 1 exemple remarquable. Mot : "${aiInput}"`,
+      debat: `Propose 3 formules soutenues pour introduire cet argument dans un débat académique. Argument : "${aiInput}"`,
+    };
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, messages: [{ role: "user", content: prompts[aiMode] }] })
+      });
+      const data = await res.json();
+      setAiOutput(data.content?.map(b => b.text || "").join("") || "Erreur.");
+    } catch {
+      setAiOutput("Connexion requise pour l'assistant IA.");
+    }
+    setAiLoading(false);
+  };
+
+  const filteredMots = DB.mots.filter(m =>
+    m.mot.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.definition.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.synonymes.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const css = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes shimmer { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .anim { animation: fadeIn 0.35s ease forwards; }
+    .shim { animation: shimmer 1.4s infinite; }
+    input, textarea, button { font-family: inherit; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: ${p.border}; border-radius: 2px; }
+  `;
+
+  return (
+    <div style={{ minHeight:"100vh", background:p.bg, color:p.text, maxWidth:480, margin:"0 auto", fontFamily:"'Georgia','Times New Roman',serif", position:"relative" }}>
+      <style>{css}</style>
+
+      {notification && (
+        <div style={{ position:"fixed", top:16, left:"50%", transform:"translateX(-50%)", background:p.gold, color:"#000", padding:"9px 18px", borderRadius:20, fontFamily:"sans-serif", fontSize:13, fontWeight:600, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.4)", animation:"fadeIn 0.3s ease", whiteSpace:"nowrap" }}>
+          {notification}
+        </div>
+      )}
+
+      {/* HEADER */}
+      <div style={{ background:p.surface, borderBottom:`1px solid ${p.border}`, padding:"14px 16px", position:"sticky", top:0, zIndex:100, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div>
+          <div style={{ color:p.gold, fontSize:9, letterSpacing:3, fontFamily:"sans-serif", textTransform:"uppercase", marginBottom:2 }}>Académie du Langage</div>
+          <div style={{ fontSize:16, fontWeight:"bold", letterSpacing:0.5 }}>Maîtrise du Français</div>
+        </div>
+        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+          <div style={{ background:p.surface2, border:`1px solid ${p.gold}50`, borderRadius:12, padding:"4px 10px", display:"flex", alignItems:"center", gap:5 }}>
+            <span style={{ color:p.gold, fontSize:13 }}>✦</span>
+            <span style={{ color:p.gold, fontFamily:"sans-serif", fontSize:13, fontWeight:700 }}>{progress.xp} XP</span>
+          </div>
+          <button onClick={() => setDark(d => !d)} style={{ background:"none", border:`1px solid ${p.border}`, borderRadius:8, padding:6, cursor:"pointer" }}>
+            <Icon name={dark?"sun":"moon"} size={15} color={p.textMuted} />
+          </button>
+        </div>
+      </div>
+
+      <div style={{ paddingBottom:80 }}>
+
+        {/* ── ACCUEIL ── */}
+        {tab === "accueil" && (
+          <div className="anim">
+            {citationDuJour && (
+              <div style={{ margin:"16px 14px 0", background:`linear-gradient(135deg,${p.surface},${p.surface2})`, border:`1px solid ${p.gold}40`, borderLeft:`3px solid ${p.gold}`, borderRadius:12, padding:"14px 16px" }}>
+                <div style={{ color:p.gold, fontSize:9, letterSpacing:2, fontFamily:"sans-serif", marginBottom:7, textTransform:"uppercase" }}>✦ Citation du Jour</div>
+                <div style={{ fontSize:14, lineHeight:1.65, fontStyle:"italic" }}>« {citationDuJour.texte} »</div>
+                <div style={{ marginTop:7, color:p.textMuted, fontFamily:"sans-serif", fontSize:11 }}>— {citationDuJour.auteur}</div>
+              </div>
+            )}
+
+            <div style={{ margin:"14px 14px 0", background:p.surface, border:`1px solid ${p.border}`, borderRadius:12, padding:"14px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                <span style={{ fontFamily:"sans-serif", fontSize:12, color:p.textMuted }}>Niveau {progress.niveau}</span>
+                <span style={{ fontFamily:"sans-serif", fontSize:11, color:p.gold }}>{progress.xp % 100}/100 XP</span>
+              </div>
+              <div style={{ background:p.surface2, borderRadius:4, height:5, overflow:"hidden", marginBottom:12 }}>
+                <div style={{ background:`linear-gradient(90deg,${p.gold},${p.goldLight})`, width:`${progress.xp % 100}%`, height:"100%", borderRadius:4, transition:"width 0.5s" }} />
+              </div>
+              <div style={{ display:"flex", gap:8, fontFamily:"sans-serif" }}>
+                {[{ v:progress.motsVus.length, l:"Mots appris" }, { v:`${progress.quizBons}/${progress.quizTotal}`, l:"Quiz réussis" }, { v:favoris.length, l:"Favoris" }].map((s,i) => (
+                  <div key={i} style={{ flex:1, textAlign:"center" }}>
+                    {i > 0 && <div style={{ position:"absolute" }} />}
+                    <div style={{ fontSize:18, fontWeight:700, color:p.gold }}>{s.v}</div>
+                    <div style={{ fontSize:10, color:p.textMuted }}>{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ margin:"18px 14px 0" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:11 }}>
+                <span style={{ color:p.gold }}>✦</span>
+                <span style={{ fontSize:15, fontWeight:"bold" }}>Mots du Jour</span>
+                <span style={{ background:p.gold, color:"#000", fontSize:10, padding:"2px 7px", borderRadius:10, fontFamily:"sans-serif", fontWeight:700 }}>{motDuJour.length}</span>
+              </div>
+              {motDuJour.map((mot, i) => (
+                <MotCard key={mot.id} mot={mot} p={p} expanded={expandedMot === mot.id} onToggle={() => { setExpandedMot(expandedMot===mot.id?null:mot.id); marquerVu(mot.id); }} onFavori={() => toggleFavori(mot.id)} isFavori={favoris.includes(mot.id)} />
+              ))}
+            </div>
+
+            <div style={{ margin:"18px 14px 0" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:11 }}>
+                <span style={{ color:p.gold }}>❧</span>
+                <span style={{ fontSize:15, fontWeight:"bold" }}>Expressions Soutenues</span>
+              </div>
+              {expDuJour.map((exp) => (
+                <div key={exp.id} style={{ background:p.surface, border:`1px solid ${p.border}`, borderRadius:12, padding:"13px 14px", marginBottom:10 }} className="anim">
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ color:p.gold, fontStyle:"italic", fontSize:15, marginBottom:2 }}>« {exp.expression} »</div>
+                      <div style={{ color:p.textMuted, fontFamily:"sans-serif", fontSize:11, marginBottom:6 }}>{exp.categorie}</div>
+                      <div style={{ fontSize:13, lineHeight:1.5 }}>{exp.definition}</div>
+                      <div style={{ color:p.textMuted, fontStyle:"italic", fontSize:12, marginTop:7, borderLeft:`2px solid ${p.gold}`, paddingLeft:8, lineHeight:1.5 }}>{exp.exemple}</div>
+                    </div>
+                    <button onClick={() => speak(exp.expression + ". " + exp.exemple)} style={{ background:"none", border:"none", cursor:"pointer", padding:"0 0 0 10px" }}>
+                      <Icon name="volume" size={17} color={p.gold} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ margin:"18px 14px 0" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:11 }}>
+                <span style={{ color:p.gold }}>⟡</span>
+                <span style={{ fontSize:15, fontWeight:"bold" }}>Connecteurs Logiques</span>
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                {DB.connecteurs.map((c,i) => (
+                  <button key={i} onClick={() => speak(c.connecteur+". "+c.exemple)} style={{ background:p.surface2, border:`1px solid ${p.border}`, borderRadius:20, padding:"5px 13px", cursor:"pointer" }}>
+                    <span style={{ color:p.gold, fontStyle:"italic", fontSize:13 }}>{c.connecteur}</span>
+                    <span style={{ color:p.textMuted, fontFamily:"sans-serif", fontSize:10, marginLeft:5 }}>— {c.usage}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── DICTIONNAIRE ── */}
+        {tab === "dictionnaire" && (
+          <div className="anim" style={{ padding:14 }}>
+            <div style={{ fontSize:15, fontWeight:"bold", marginBottom:12 }}>Dictionnaire Soutenu</div>
+            <div style={{ position:"relative", marginBottom:13 }}>
+              <div style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)" }}><Icon name="search" size={15} color={p.textMuted} /></div>
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Rechercher un mot, synonyme..." style={{ width:"100%", background:p.surface, border:`1px solid ${p.border}`, borderRadius:10, padding:"10px 11px 10px 36px", color:p.text, fontFamily:"sans-serif", fontSize:14, outline:"none" }} />
+            </div>
+            <div style={{ fontFamily:"sans-serif", fontSize:11, color:p.textMuted, marginBottom:11 }}>{filteredMots.length} mot{filteredMots.length!==1?"s":""} trouvé{filteredMots.length!==1?"s":""}</div>
+            {filteredMots.map(mot => (
+              <MotCard key={mot.id} mot={mot} p={p} expanded={expandedMot===mot.id} onToggle={() => setExpandedMot(expandedMot===mot.id?null:mot.id)} onFavori={() => toggleFavori(mot.id)} isFavori={favoris.includes(mot.id)} />
+            ))}
+          </div>
+        )}
+
+        {/* ── QUIZ ── */}
+        {tab === "quiz" && (
+          <div className="anim" style={{ padding:14 }}>
+            {!quizStarted ? (
+              <div>
+                <div style={{ fontSize:15, fontWeight:"bold", marginBottom:4 }}>Quiz d'Éloquence</div>
+                <div style={{ color:p.textMuted, fontFamily:"sans-serif", fontSize:13, marginBottom:16 }}>Testez votre maîtrise du vocabulaire soutenu</div>
+                <div style={{ background:p.surface, border:`1px solid ${p.border}`, borderRadius:14, padding:"18px", marginBottom:14, textAlign:"center" }}>
+                  <div style={{ fontSize:38, marginBottom:8 }}>🎓</div>
+                  <div style={{ fontSize:22, fontWeight:700, color:p.gold }}>{progress.quizBons}</div>
+                  <div style={{ fontFamily:"sans-serif", fontSize:12, color:p.textMuted }}>bonnes réponses · Taux : {progress.quizTotal>0 ? Math.round((progress.quizBons/progress.quizTotal)*100) : 0}%</div>
+                </div>
+                <div style={{ background:p.surface2, border:`1px solid ${p.border}`, borderRadius:12, padding:"13px 14px", marginBottom:18 }}>
+                  {["Définitions & synonymes","20 questions par session","+15 XP par bonne réponse","Difficulté adaptative"].map((item,i) => (
+                    <div key={i} style={{ display:"flex", gap:8, alignItems:"center", marginBottom:7, fontFamily:"sans-serif", fontSize:13 }}>
+                      <Icon name="check" size={13} color={p.gold} />{item}
+                    </div>
+                  ))}
+                </div>
+                <button onClick={startQuiz} style={{ width:"100%", background:`linear-gradient(135deg,${p.gold},${p.goldLight})`, border:"none", borderRadius:12, padding:"14px", cursor:"pointer", fontSize:15, fontWeight:700, color:"#0A0E1A" }}>
+                  Commencer le Quiz ✦
+                </button>
+              </div>
+            ) : quizState.done ? (
+              <div style={{ textAlign:"center", paddingTop:20 }} className="anim">
+                <div style={{ fontSize:48, marginBottom:10 }}>{quizState.score>=15?"🏆":quizState.score>=10?"🎓":"📚"}</div>
+                <div style={{ fontSize:24, fontWeight:700, color:p.gold, marginBottom:5 }}>{quizState.score}/{quizState.questions.length}</div>
+                <div style={{ color:p.textMuted, fontFamily:"sans-serif", fontSize:13, marginBottom:3 }}>
+                  {quizState.score>=15?"Éloquence remarquable !":quizState.score>=10?"Bonne maîtrise !":"Continuez votre apprentissage"}
+                </div>
+                <div style={{ color:p.gold, fontFamily:"sans-serif", fontSize:12, marginBottom:26 }}>+{quizState.score*15} XP gagnés</div>
+                <div style={{ display:"flex", gap:10 }}>
+                  <button onClick={() => setQuizStarted(false)} style={{ flex:1, background:p.surface2, border:`1px solid ${p.border}`, borderRadius:10, padding:12, cursor:"pointer", color:p.text, fontFamily:"sans-serif" }}>Accueil</button>
+                  <button onClick={startQuiz} style={{ flex:1, background:`linear-gradient(135deg,${p.gold},${p.goldLight})`, border:"none", borderRadius:10, padding:12, cursor:"pointer", color:"#000", fontFamily:"sans-serif", fontWeight:700 }}>Rejouer ✦</button>
+                </div>
+              </div>
+            ) : (
+              <div className="anim" key={quizState.idx}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:14 }}>
+                  <span style={{ fontFamily:"sans-serif", fontSize:12, color:p.textMuted }}>Question {quizState.idx+1}/{quizState.questions.length}</span>
+                  <span style={{ fontFamily:"sans-serif", fontSize:12, color:p.gold }}>Score : {quizState.score}</span>
+                </div>
+                <div style={{ background:p.surface2, borderRadius:4, height:4, marginBottom:18 }}>
+                  <div style={{ background:p.gold, height:"100%", borderRadius:4, width:`${(quizState.idx/quizState.questions.length)*100}%`, transition:"width 0.3s" }} />
+                </div>
+                <div style={{ background:p.surface, border:`1px solid ${p.border}`, borderRadius:12, padding:"16px", marginBottom:14 }}>
+                  <div style={{ color:p.gold, fontSize:9, letterSpacing:2, fontFamily:"sans-serif", marginBottom:7, textTransform:"uppercase" }}>
+                    {quizState.questions[quizState.idx]?.type==="synonyme"?"Synonyme":"Définition"}
+                  </div>
+                  <div style={{ fontSize:15, lineHeight:1.5 }}>{quizState.questions[quizState.idx]?.question}</div>
+                </div>
+                {quizState.questions[quizState.idx]?.options.map((opt,i) => {
+                  const sel = quizState.selected === opt;
+                  const isAns = opt === quizState.questions[quizState.idx]?.answer;
+                  const show = quizState.selected !== null;
+                  return (
+                    <button key={i} onClick={() => !quizState.selected && answerQuiz(opt)} style={{ width:"100%", background: show&&isAns?"#1a3a2a": show&&sel&&!isAns?"#3a1a1a":p.surface, border:`1px solid ${show&&isAns?p.success: show&&sel&&!isAns?p.error:p.border}`, borderRadius:10, padding:"12px 14px", marginBottom:9, cursor:quizState.selected?"default":"pointer", textAlign:"left", color:p.text, fontSize:13, lineHeight:1.4, display:"flex", justifyContent:"space-between", alignItems:"center", transition:"all 0.2s" }}>
+                      <span style={{ flex:1 }}>{opt}</span>
+                      {show&&isAns&&<Icon name="check" size={15} color={p.success} />}
+                      {show&&sel&&!isAns&&<Icon name="x" size={15} color={p.error} />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ÉLOQUENCE IA ── */}
+        {tab === "eloquence" && (
+          <div className="anim" style={{ padding:14 }}>
+            <div style={{ fontSize:15, fontWeight:"bold", marginBottom:3 }}>Assistant d'Éloquence</div>
+            <div style={{ color:p.textMuted, fontFamily:"sans-serif", fontSize:12, marginBottom:14 }}>Propulsé par Claude AI · Parlez comme un intellectuel</div>
+            <div style={{ display:"flex", gap:7, marginBottom:14 }}>
+              {[{k:"reformuler",l:"Reformuler"},{k:"definir",l:"Définir"},{k:"debat",l:"Débat"}].map(m => (
+                <button key={m.k} onClick={() => setAiMode(m.k)} style={{ flex:1, background:aiMode===m.k?p.gold:p.surface2, border:`1px solid ${aiMode===m.k?p.gold:p.border}`, borderRadius:8, padding:"9px 4px", cursor:"pointer", color:aiMode===m.k?"#000":p.text, fontFamily:"sans-serif", fontSize:12, fontWeight:aiMode===m.k?700:400 }}>
+                  {m.l}
+                </button>
+              ))}
+            </div>
+            <div style={{ background:p.surface2, border:`1px solid ${p.border}`, borderRadius:9, padding:"9px 12px", marginBottom:12, fontFamily:"sans-serif", fontSize:11, color:p.textMuted, lineHeight:1.5 }}>
+              {aiMode==="reformuler"&&"✦ Entrez une phrase simple — reformulation en français soutenu"}
+              {aiMode==="definir"&&"✦ Entrez un mot ou expression — définition académique complète"}
+              {aiMode==="debat"&&"✦ Entrez un argument — formules éloquentes pour exposés et débats"}
+            </div>
+            <textarea value={aiInput} onChange={e => setAiInput(e.target.value)} placeholder={aiMode==="reformuler"?"Ex: Je pense que c'est pas bien...":aiMode==="definir"?"Ex: Épistémique":"Ex: La liberté est essentielle"} rows={3} style={{ width:"100%", background:p.surface, border:`1px solid ${p.border}`, borderRadius:10, padding:"11px", color:p.text, fontSize:14, resize:"none", outline:"none", marginBottom:11, lineHeight:1.5 }} />
+            <button onClick={callAI} disabled={aiLoading||!aiInput.trim()} style={{ width:"100%", background:aiLoading?p.surface2:`linear-gradient(135deg,${p.gold},${p.goldLight})`, border:"none", borderRadius:10, padding:"13px", cursor:aiLoading?"default":"pointer", color:aiLoading?p.textMuted:"#000", fontFamily:"sans-serif", fontSize:14, fontWeight:700, marginBottom:14 }} className={aiLoading?"shim":""}>
+              {aiLoading?"L'IA réfléchit...":"✦ Transformer avec l'IA"}
+            </button>
+            {aiOutput && (
+              <div className="anim" style={{ background:p.surface, border:`1px solid ${p.gold}40`, borderLeft:`3px solid ${p.gold}`, borderRadius:12, padding:"14px" }}>
+                <div style={{ color:p.gold, fontSize:9, letterSpacing:2, fontFamily:"sans-serif", marginBottom:9, textTransform:"uppercase" }}>✦ Réponse</div>
+                <div style={{ fontSize:14, lineHeight:1.7, whiteSpace:"pre-wrap" }}>{aiOutput}</div>
+                <button onClick={() => speak(aiOutput)} style={{ marginTop:11, background:"none", border:`1px solid ${p.border}`, borderRadius:8, padding:"6px 13px", cursor:"pointer", color:p.gold, fontFamily:"sans-serif", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
+                  <Icon name="volume" size={13} color={p.gold} />Écouter
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── FAVORIS ── */}
+        {tab === "favoris" && (
+          <div className="anim" style={{ padding:14 }}>
+            <div style={{ fontSize:15, fontWeight:"bold", marginBottom:3 }}>Mes Favoris</div>
+            <div style={{ color:p.textMuted, fontFamily:"sans-serif", fontSize:12, marginBottom:14 }}>{favoris.length} mot{favoris.length!==1?"s":""} sauvegardé{favoris.length!==1?"s":""}</div>
+            {favoris.length===0 ? (
+              <div style={{ textAlign:"center", padding:"40px 20px" }}>
+                <div style={{ fontSize:36, marginBottom:10, color:p.gold }}>✦</div>
+                <div style={{ color:p.textMuted, fontFamily:"sans-serif", fontSize:13 }}>Aucun favori.<br/>Appuyez sur ♡ sur un mot pour le sauvegarder.</div>
+              </div>
+            ) : DB.mots.filter(m => favoris.includes(m.id)).map(mot => (
+              <MotCard key={mot.id} mot={mot} p={p} expanded={expandedMot===mot.id} onToggle={() => setExpandedMot(expandedMot===mot.id?null:mot.id)} onFavori={() => toggleFavori(mot.id)} isFavori={true} />
+            ))}
+          </div>
+        )}
+
+      </div>
+
+      {/* NAV */}
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:p.surface, borderTop:`1px solid ${p.border}`, display:"flex", zIndex:100 }}>
+        {[{k:"accueil",i:"home",l:"Accueil"},{k:"dictionnaire",i:"book",l:"Dico"},{k:"quiz",i:"quiz",l:"Quiz"},{k:"eloquence",i:"ai",l:"IA"},{k:"favoris",i:"heart_empty",l:"Favoris"}].map(t => (
+          <button key={t.k} onClick={() => setTab(t.k)} style={{ flex:1, background:"none", border:"none", padding:"9px 0", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+            <Icon name={t.k==="favoris"?(tab==="favoris"?"heart_full":"heart_empty"):t.i} size={19} color={tab===t.k?p.gold:p.textMuted} />
+            <span style={{ fontFamily:"sans-serif", fontSize:9, color:tab===t.k?p.gold:p.textMuted, letterSpacing:0.5, fontWeight:tab===t.k?700:400 }}>{t.l.toUpperCase()}</span>
+            {tab===t.k&&<div style={{ width:18, height:2, background:p.gold, borderRadius:1 }} />}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MotCard({ mot, p, expanded, onToggle, onFavori, isFavori }) {
+  return (
+    <div style={{ background:p.surface, border:`1px solid ${expanded?p.gold+"60":p.border}`, borderRadius:12, marginBottom:9, overflow:"hidden", transition:"border-color 0.2s" }} className="anim">
+      <div onClick={onToggle} style={{ padding:"13px 14px", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div style={{ flex:1 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+            <span style={{ fontSize:16, fontWeight:"bold" }}>{mot.mot}</span>
+            <span style={{ color:p.textMuted, fontSize:11, fontFamily:"sans-serif" }}>{mot.phonetique}</span>
+          </div>
+          <div style={{ display:"flex", gap:5, marginTop:5, flexWrap:"wrap" }}>
+            <span style={{ background:p.gold+"20", color:p.gold, fontSize:10, padding:"2px 7px", borderRadius:8, fontFamily:"sans-serif" }}>{mot.categorie}</span>
+            <span style={{ background:p.surface2, color:p.textMuted, fontSize:10, padding:"2px 7px", borderRadius:8, fontFamily:"sans-serif" }}>{mot.niveau}</span>
+            <span style={{ background:p.surface2, color:p.textMuted, fontSize:10, padding:"2px 7px", borderRadius:8, fontFamily:"sans-serif" }}>{mot.theme}</span>
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:7, alignItems:"center" }}>
+          <button onClick={e => { e.stopPropagation(); onFavori(); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>
+            <Icon name={isFavori?"heart_full":"heart_empty"} size={16} color={isFavori?p.gold:p.textMuted} />
+          </button>
+          <button onClick={e => { e.stopPropagation(); speak(mot.mot+". "+mot.definition); }} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>
+            <Icon name="volume" size={16} color={p.gold} />
+          </button>
+          <span style={{ color:p.textMuted, fontSize:16, transform:expanded?"rotate(180deg)":"none", transition:"transform 0.2s", display:"inline-block", lineHeight:1 }}>⌄</span>
+        </div>
+      </div>
+      {expanded && (
+        <div style={{ padding:"0 14px 14px", borderTop:`1px solid ${p.border}` }} className="anim">
+          <div style={{ marginTop:11, fontSize:14, lineHeight:1.6 }}>{mot.definition}</div>
+          <div style={{ marginTop:11, background:p.surface2, borderRadius:8, padding:"9px 11px", borderLeft:`2px solid ${p.gold}` }}>
+            <div style={{ fontSize:9, color:p.gold, fontFamily:"sans-serif", letterSpacing:1, marginBottom:4, textTransform:"uppercase" }}>Exemple</div>
+            <div style={{ fontSize:13, fontStyle:"italic", lineHeight:1.5 }}>« {mot.exemple} »</div>
+          </div>
+          {mot.synonymes.length>0&&(
+            <div style={{ marginTop:9 }}>
+              <div style={{ fontSize:9, color:p.textMuted, fontFamily:"sans-serif", letterSpacing:1, marginBottom:5, textTransform:"uppercase" }}>Synonymes</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                {mot.synonymes.map((s,i) => <span key={i} style={{ background:"#1a3a2a", color:"#4CAF7D", fontSize:11, padding:"2px 9px", borderRadius:7, fontFamily:"sans-serif" }}>{s}</span>)}
+              </div>
+            </div>
+          )}
+          {mot.antonymes.length>0&&(
+            <div style={{ marginTop:9 }}>
+              <div style={{ fontSize:9, color:p.textMuted, fontFamily:"sans-serif", letterSpacing:1, marginBottom:5, textTransform:"uppercase" }}>Antonymes</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                {mot.antonymes.map((a,i) => <span key={i} style={{ background:"#3a1a1a", color:"#E05C5C", fontSize:11, padding:"2px 9px", borderRadius:7, fontFamily:"sans-serif" }}>{a}</span>)}
+              </div>
+            </div>
+          )}
+          {mot.contexte&&(
+            <div style={{ marginTop:9, fontSize:11, color:p.textMuted, fontStyle:"italic", fontFamily:"sans-serif", lineHeight:1.5, borderTop:`1px solid ${p.border}`, paddingTop:7 }}>⟡ {mot.contexte}</div>
+          )}
+          <div style={{ display:"flex", gap:7, marginTop:11 }}>
+            {[{l:"Normal",s:false},{l:"Lent",s:true},{l:"Exemple",e:true}].map((b,i) => (
+              <button key={i} onClick={() => speak(b.e?mot.exemple:mot.mot, b.s)} style={{ flex:1, background:p.surface2, border:`1px solid ${p.border}`, borderRadius:8, padding:"7px 3px", cursor:"pointer", color:i===0?p.gold:p.textMuted, fontFamily:"sans-serif", fontSize:11, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                <Icon name="volume" size={12} color={i===0?p.gold:p.textMuted} />{b.l}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+window.__appRendered = true;
+</script>
+
+<script>
+(function() {
+  try {
+    if (typeof React === "undefined" || typeof ReactDOM === "undefined" || typeof Babel === "undefined") {
+      // Une des bibliothèques n'a pas chargé ; le message d'erreur a déjà été affiché par onerror.
+      return;
+    }
+    var source = document.getElementById("app-source").textContent;
+    var transformed = Babel.transform(source, { presets: ["react"] }).code;
+    var script = document.createElement("script");
+    script.text = transformed;
+    document.body.appendChild(script);
+  } catch (e) {
+    window.__appErrored = true;
+    showFatalError("Erreur de syntaxe dans l'application", (e && e.message) ? e.message : String(e));
+  }
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch((err) => {
+      console.warn("Échec de l'enregistrement du service worker :", err);
+    });
+  });
+}
+</script>
+
+</body>
+</html>
